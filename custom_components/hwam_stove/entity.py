@@ -5,7 +5,7 @@ from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.entity import Entity, EntityDescription
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from pystove import Stove
+from .pystove import Stove
 
 from .const import DOMAIN, StoveDeviceIdentifier
 from .coordinator import StoveCoordinator

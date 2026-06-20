@@ -18,7 +18,7 @@ from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.util.dt import get_default_time_zone
 
-from pystove import pystove
+from .pystove import pystove
 
 from .const import DATA_STOVES, DOMAIN, StoveDeviceIdentifier
 from .coordinator import StoveCoordinator

@@ -17,7 +17,7 @@ import voluptuous as vol
 
 CONF_MONITORED_VARIABLES = "monitored_variables"
 
-from pystove import Stove
+from .pystove import Stove
 
 from .const import DATA_STOVES, DOMAIN
 from .coordinator import StoveCoordinator

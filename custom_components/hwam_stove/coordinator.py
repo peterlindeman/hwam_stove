@@ -10,7 +10,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
-from pystove import pystove
+from .pystove import pystove
 
 from .const import DOMAIN, StoveDeviceIdentifier
 

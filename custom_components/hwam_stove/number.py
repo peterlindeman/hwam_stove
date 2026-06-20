@@ -15,7 +15,7 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from pystove import pystove
+from .pystove import pystove
 
 from .const import DATA_STOVES, DOMAIN, StoveDeviceIdentifier
 from .entity import HWAMStoveCoordinatorEntity, HWAMStoveEntityDescription

@@ -8,7 +8,7 @@ from homeassistant.config_entries import ConfigFlow, ConfigFlowResult
 from homeassistant.const import CONF_HOST, CONF_NAME
 import voluptuous as vol
 
-from pystove import pystove
+from .pystove import pystove
 
 from .const import DOMAIN
 
