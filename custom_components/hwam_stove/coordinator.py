@@ -16,20 +16,17 @@ from .const import DOMAIN, StoveDeviceIdentifier
 
 _LOGGER = logging.getLogger(__name__)
 
-_STOVE_MONTH_KEY = "month"
+def _patch_stove(stove: pystove.Stove) -> None:
+    """Patch stove.get_raw_data to fix 0-based/unset date fields from firmware.
 
-
-def _patch_stove_get_raw_data(stove: pystove.Stove) -> None:
-    """Patch get_raw_data to fix 0-based date fields from stove firmware.
-
-    The stove reports month as 0-11 and may report day/month as 0 when the
-    clock has never been set. Clamp all date parts to valid ranges so pystove's
-    datetime() constructor doesn't crash.
+    The stove reports months as 0-11 and sends 0 for day/month/year when its
+    clock has never been synchronized. pystove passes these directly to
+    datetime() which expects 1-based values and rejects 0. We clamp them here.
     """
-    original_get_raw_data = stove.get_raw_data
+    original = stove.__class__.get_raw_data
 
-    async def patched_get_raw_data():
-        data = await original_get_raw_data()
+    async def patched_get_raw_data(self):
+        data = await original(self)
         if data:
             if "month" in data:
                 data["month"] = max(1, data["month"] + 1)
@@ -39,7 +36,7 @@ def _patch_stove_get_raw_data(stove: pystove.Stove) -> None:
                 data["year"] = max(1, data["year"])
         return data
 
-    stove.get_raw_data = patched_get_raw_data
+    stove.__class__.get_raw_data = patched_get_raw_data
 
 
 class StoveCoordinator(DataUpdateCoordinator):
@@ -64,7 +61,7 @@ class StoveCoordinator(DataUpdateCoordinator):
         self.hass = hass
         self.name = config_entry.data[CONF_NAME]
         self.stove = stove
-        _patch_stove_get_raw_data(stove)
+        _patch_stove(stove)
 
         dev_reg = dr.async_get(hass)
         self.stove_device_entry = dev_reg.async_get_or_create(
