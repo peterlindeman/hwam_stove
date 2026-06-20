@@ -75,9 +75,12 @@ class HwamStoveTime(HWAMStoveCoordinatorEntity, DateTimeEntity):
     def _handle_coordinator_update(self) -> None:
         """Handle status updates from the component."""
         naive_dt: datetime = self.coordinator.data[self.entity_description.key]
-        self._attr_native_value = datetime.combine(
-            naive_dt.date(), naive_dt.time(), get_default_time_zone()
-        )
+        try:
+            self._attr_native_value = datetime.combine(
+                naive_dt.date(), naive_dt.time(), get_default_time_zone()
+            )
+        except ValueError:
+            self._attr_native_value = None
         self.async_write_ha_state()
 
     async def async_set_value(self, value: datetime) -> None:

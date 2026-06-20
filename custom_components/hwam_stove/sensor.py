@@ -45,6 +45,18 @@ class HWAMStoveSensorEntityDescription(
     ] = lambda data, key: data[key]
 
 
+def _safe_firewood_datetime(data: dict, key: str) -> datetime | None:
+    """Return firewood estimate datetime, or None if stove reports an invalid date."""
+    if data[pystove.DATA_PHASE] != pystove.PHASE[4]:
+        return None
+    try:
+        return datetime.combine(
+            data[key].date(), data[key].time(), dt.get_default_time_zone()
+        )
+    except ValueError:
+        return None
+
+
 NIGHT_LOWERING_STATES_LOOKUP = dict(
     zip(
         pystove.NIGHT_LOWERING_STATES,
@@ -113,13 +125,7 @@ SENSOR_DESCRIPTIONS = [
         translation_key="new_firewood_estimate",
         device_identifier=StoveDeviceIdentifier.STOVE,
         device_class=SensorDeviceClass.TIMESTAMP,
-        state_func=lambda data, key: (
-            datetime.combine(
-                data[key].date(), data[key].time(), dt.get_default_time_zone()
-            )
-            if data[pystove.DATA_PHASE] == pystove.PHASE[4]
-            else None
-        ),
+        state_func=lambda data, key: _safe_firewood_datetime(data, key),
         entity_category=EntityCategory.DIAGNOSTIC,
     ),
     HWAMStoveSensorEntityDescription(
