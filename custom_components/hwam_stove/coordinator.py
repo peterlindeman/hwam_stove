@@ -60,7 +60,10 @@ class StoveCoordinator(DataUpdateCoordinator):
 
     async def _async_update_data(self) -> dict[str, Any]:
         """Update stove info."""
-        data = await self.stove.get_data()
+        try:
+            data = await self.stove.get_data()
+        except ValueError as e:
+            raise UpdateFailed(f"Invalid data from stove: {e}") from e
         if data is None:
             raise UpdateFailed("Got empty response")
 
