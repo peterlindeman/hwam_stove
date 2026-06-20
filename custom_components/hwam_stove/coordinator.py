@@ -16,6 +16,26 @@ from .const import DOMAIN, StoveDeviceIdentifier
 
 _LOGGER = logging.getLogger(__name__)
 
+_STOVE_MONTH_KEY = "month"
+
+
+def _patch_stove_get_raw_data(stove: pystove.Stove) -> None:
+    """Patch get_raw_data to fix 0-based month from stove firmware.
+
+    The stove reports months as 0-11, but pystove passes them directly to
+    Python's datetime() which expects 1-12. This adjusts the raw data before
+    pystove processes it.
+    """
+    original_get_raw_data = stove.get_raw_data
+
+    async def patched_get_raw_data():
+        data = await original_get_raw_data()
+        if data and _STOVE_MONTH_KEY in data:
+            data[_STOVE_MONTH_KEY] = max(1, data[_STOVE_MONTH_KEY] + 1)
+        return data
+
+    stove.get_raw_data = patched_get_raw_data
+
 
 class StoveCoordinator(DataUpdateCoordinator):
     """Abstract description of a stove coordinator."""
@@ -39,6 +59,7 @@ class StoveCoordinator(DataUpdateCoordinator):
         self.hass = hass
         self.name = config_entry.data[CONF_NAME]
         self.stove = stove
+        _patch_stove_get_raw_data(stove)
 
         dev_reg = dr.async_get(hass)
         self.stove_device_entry = dev_reg.async_get_or_create(
@@ -60,10 +81,7 @@ class StoveCoordinator(DataUpdateCoordinator):
 
     async def _async_update_data(self) -> dict[str, Any]:
         """Update stove info."""
-        try:
-            data = await self.stove.get_data()
-        except ValueError as e:
-            raise UpdateFailed(f"Invalid data from stove: {e}") from e
+        data = await self.stove.get_data()
         if data is None:
             raise UpdateFailed("Got empty response")
 
