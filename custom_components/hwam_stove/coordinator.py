@@ -20,18 +20,23 @@ _STOVE_MONTH_KEY = "month"
 
 
 def _patch_stove_get_raw_data(stove: pystove.Stove) -> None:
-    """Patch get_raw_data to fix 0-based month from stove firmware.
+    """Patch get_raw_data to fix 0-based date fields from stove firmware.
 
-    The stove reports months as 0-11, but pystove passes them directly to
-    Python's datetime() which expects 1-12. This adjusts the raw data before
-    pystove processes it.
+    The stove reports month as 0-11 and may report day/month as 0 when the
+    clock has never been set. Clamp all date parts to valid ranges so pystove's
+    datetime() constructor doesn't crash.
     """
     original_get_raw_data = stove.get_raw_data
 
     async def patched_get_raw_data():
         data = await original_get_raw_data()
-        if data and _STOVE_MONTH_KEY in data:
-            data[_STOVE_MONTH_KEY] = max(1, data[_STOVE_MONTH_KEY] + 1)
+        if data:
+            if "month" in data:
+                data["month"] = max(1, data["month"] + 1)
+            if "day" in data:
+                data["day"] = max(1, data["day"])
+            if "year" in data:
+                data["year"] = max(1, data["year"])
         return data
 
     stove.get_raw_data = patched_get_raw_data
