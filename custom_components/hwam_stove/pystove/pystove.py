@@ -28,6 +28,7 @@ from aiohttp.client_exceptions import ClientConnectorError
 import defusedxml.ElementTree as ET
 
 from . import const as c
+from .const import *  # noqa: F401, F403 - re-export for backwards compatibility
 
 _LOGGER = logging.getLogger(__name__)
 
