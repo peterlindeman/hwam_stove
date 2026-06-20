@@ -1,7 +1,9 @@
 {
   "config": {
     "step": {
-      "init": {
+      "user": {
+        "title": "HWAM Smart Stove instellen",
+        "description": "Vul de naam en het IP-adres van je HWAM kachel in.",
         "data": {
           "name": "Naam",
           "host": "Hostnaam of IP"

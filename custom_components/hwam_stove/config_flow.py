@@ -18,66 +18,55 @@ class HWAMStoveConfigFlow(ConfigFlow, domain=DOMAIN):  # type: ignore[call-arg]
 
     VERSION = 1
 
-    async def async_step_init(
-        self, info: dict[str, Any] | None = None
-    ) -> ConfigFlowResult:
-        """Handle config flow initiation."""
-        if info:
-            name = info[CONF_NAME]
-            host = info[CONF_HOST]
-
-            entries = [e.data for e in self._async_current_entries()]
-
-            if host in [e[CONF_HOST] for e in entries]:
-                return self._show_form({"base": "already_configured"})
-
-            async def test_connection() -> None:
-                """Try to connect to the OpenTherm Gateway."""
-                stove = await pystove.Stove.create(host)
-                status = (
-                    stove.name != pystove.UNKNOWN and stove.stove_ip != pystove.UNKNOWN  # type: ignore[attr-defined]
-                )
-                await stove.destroy()
-                if not status:
-                    raise ConnectionError
-
-            try:
-                await test_connection()
-            except ConnectionError:
-                return self._show_form({"base": "cannot_connect"})
-
-            return self._create_entry(name, host)
-
-        return self._show_form()
-
     async def async_step_user(
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
         """Handle manual initiation of the config flow."""
-        return await self.async_step_init(user_input)
+        errors: dict[str, str] = {}
+        if user_input:
+            name = user_input[CONF_NAME]
+            host = user_input[CONF_HOST]
 
-    async def async_step_import(self, import_data: dict[str, Any]) -> ConfigFlowResult:
-        """Import an OpenTherm Gateway device as a config entry.
+            entries = [e.data for e in self._async_current_entries()]
+            if host in [e[CONF_HOST] for e in entries]:
+                errors["base"] = "already_configured"
+            else:
+                try:
+                    stove = await pystove.Stove.create(host)
+                    status = (
+                        stove.name != pystove.UNKNOWN
+                        and stove.stove_ip != pystove.UNKNOWN  # type: ignore[attr-defined]
+                    )
+                    await stove.destroy()
+                    if not status:
+                        raise ConnectionError
+                except (ConnectionError, Exception):
+                    errors["base"] = "cannot_connect"
 
-        This flow is triggered by `async_setup` for configured devices.
-        """
-        formatted_config = {
-            CONF_NAME: import_data[CONF_NAME],
-            CONF_HOST: import_data[CONF_HOST],
-        }
-        return await self.async_step_init(info=formatted_config)
+                if not errors:
+                    return self._create_entry(name, host)
 
-    def _show_form(self, errors: dict[str, str] | None = None) -> ConfigFlowResult:
-        """Show the config flow form with possible errors."""
         return self.async_show_form(
-            step_id="init",
+            step_id="user",
             data_schema=vol.Schema(
                 {
                     vol.Required(CONF_NAME): str,
                     vol.Required(CONF_HOST): str,
                 }
             ),
-            errors=errors or {},
+            errors=errors,
+        )
+
+    async def async_step_import(self, import_data: dict[str, Any]) -> ConfigFlowResult:
+        """Import a HWAM Stove device as a config entry.
+
+        This flow is triggered by `async_setup` for configured devices.
+        """
+        return await self.async_step_user(
+            {
+                CONF_NAME: import_data[CONF_NAME],
+                CONF_HOST: import_data[CONF_HOST],
+            }
         )
 
     def _create_entry(self, name: str, host: str) -> ConfigFlowResult:

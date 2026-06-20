@@ -9,11 +9,13 @@ from asyncio import CancelledError
 import logging
 
 from homeassistant.config_entries import SOURCE_IMPORT, ConfigEntry, ConfigEntryNotReady
-from homeassistant.const import CONF_HOST, CONF_MONITORED_VARIABLES, CONF_NAME, Platform
+from homeassistant.const import CONF_HOST, CONF_NAME, Platform
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import config_validation as cv, issue_registry as ir
 from homeassistant.helpers.typing import ConfigType
 import voluptuous as vol
+
+CONF_MONITORED_VARIABLES = "monitored_variables"
 
 from pystove import Stove
 
