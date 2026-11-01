@@ -21,8 +21,8 @@ Of gebruik de knop hieronder na installatie:
 
 Deze fork bevat de volgende fixes voor HA 2026.06:
 
-### pystove: 0-gebaseerde maand/dag crash
-De kachelfirmware stuurt maanden als 0–11 (0 = januari) en stuurt `0` voor dag en maand als de klok nooit gesynchroniseerd is. pystove gaf deze waarden direct door aan Python's `datetime()`, wat een `ValueError` veroorzaakte en de integratie liet crashen bij elke update. Opgelost door pystove mee te leveren in de integratie (vendoring) met de fix toegepast. De gefixte pystove broncode staat ook in [peterlindeman/pystove](https://github.com/peterlindeman/pystove).
+### pystove: crash op ongeldige kacheldatum
+De kachel meldt de maand 1-gebaseerd (10 = oktober), maar verwacht hem 0-gebaseerd bij het instellen van de klok (0 = januari). Eerdere versies gingen er ten onrechte van uit dat de maand ook bij het lezen 0-gebaseerd is. Daardoor kreeg de integratie op 31 oktober november 31 en crashte bij elke update. Verder stuurt de kachel `0` voor dag en maand als de klok nooit gesynchroniseerd is. Een datum of tijd die toch ongeldig is, wordt nu afgevangen: de kachelklok valt dan terug op de lokale tijd en de integratie blijft werken. pystove wordt meegeleverd in de integratie (vendoring); de broncode staat ook in [peterlindeman/pystove](https://github.com/peterlindeman/pystove).
 
 ### `CONF_MONITORED_VARIABLES` verwijderd uit HA
 Dit constant is verwijderd uit `homeassistant.const` in recente HA-versies. De import werd vervangen door een lokale definitie (alleen nog relevant voor de verouderde YAML-configuratie, die al als deprecated wordt aangegeven).

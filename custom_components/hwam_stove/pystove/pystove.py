@@ -26,6 +26,15 @@ import aiohttp
 
 _LOGGER = logging.getLogger(__name__)
 
+
+def _safe_time(hour, minute):
+    """Return a time, or None if the stove reports an invalid time of day."""
+    try:
+        return time(hour=hour, minute=minute)
+    except (TypeError, ValueError):
+        _LOGGER.warning("Stove reported an invalid time (%s:%s)", hour, minute)
+        return None
+
 DATA_ALGORITHM = "algorithm"
 DATA_BEGIN_HOUR = "begin_hour"
 DATA_BEGIN_MINUTE = "begin_minute"
@@ -209,14 +218,25 @@ class Stove:
         if data is None:
             return
         phase = PHASE[data[DATA_PHASE]]
-        stove_datetime = datetime(
-            max(1, data[DATA_YEAR]),
-            max(1, data[DATA_MONTH] + 1),  # Stove month output is 0 based.
-            max(1, data[DATA_DAY]),
-            data[DATA_HOURS],
-            data[DATA_MINUTES],
-            data[DATA_SECONDS],
-        )
+        try:
+            stove_datetime = datetime(
+                max(1, data[DATA_YEAR]),
+                max(1, data[DATA_MONTH]),  # Stove month is 1 based (10 on 31 Oct).
+                max(1, data[DATA_DAY]),
+                data[DATA_HOURS],
+                data[DATA_MINUTES],
+                data[DATA_SECONDS],
+            )
+        except ValueError:
+            # The stove clock can hold a date that does not exist (e.g. day 31
+            # in a 30-day month); don't let that take the whole integration down.
+            _LOGGER.warning(
+                "Stove reported an invalid date (%s-%s-%s), using local time",
+                data[DATA_YEAR],
+                data[DATA_MONTH],
+                data[DATA_DAY],
+            )
+            stove_datetime = datetime.now()
         time_to_refuel = timedelta(
             hours=data[DATA_NEW_FIREWOOD_HOURS], minutes=data[DATA_NEW_FIREWOOD_MINUTES]
         )
@@ -227,11 +247,11 @@ class Stove:
         safety_alarms = self._get_safety_alarms_text(data[DATA_SAFETY_ALARMS])
         operation_mode = OPERATION_MODES[data[DATA_OPERATION_MODE]]
         night_lowering = NIGHT_LOWERING_STATES[data[DATA_NIGHT_LOWERING]]
-        nighttime_start = time(
-            hour=data[DATA_NIGHT_BEGIN_HOUR], minute=data[DATA_NIGHT_BEGIN_MINUTE]
+        nighttime_start = _safe_time(
+            data[DATA_NIGHT_BEGIN_HOUR], data[DATA_NIGHT_BEGIN_MINUTE]
         )
-        nighttime_end = time(
-            hour=data[DATA_NIGHT_END_HOUR], minute=data[DATA_NIGHT_END_MINUTE]
+        nighttime_end = _safe_time(
+            data[DATA_NIGHT_END_HOUR], data[DATA_NIGHT_END_MINUTE]
         )
         stove_version = (
             f"{data[DATA_FIRMWARE_VERSION_MAJOR]}"
@@ -383,7 +403,8 @@ class Stove:
             new_time = datetime.now()
         data = {
             "year": new_time.year,
-            "month": new_time.month - 1,  # Stove month input is 0 based.
+            # Stove month input is 0 based, but it reports the month 1 based.
+            "month": new_time.month - 1,
             "day": new_time.day,
             "hours": new_time.hour,
             "minutes": new_time.minute,

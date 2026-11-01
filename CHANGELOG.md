@@ -1,12 +1,20 @@
 # Changelog
 
+## 1.1.1
+
+### Wijzigingen
+
+- **Fix: kacheldatum 31 van een 30-dagenmaand crasht de integratie** — de kachel meldt de maand 1-gebaseerd, maar de code telde er 1 bij op. Op 31 oktober werd dat november 31, waardoor elke update faalde en alle entiteiten `unavailable` werden. De maand wordt nu zonder correctie gelezen.
+- **Fix: "Synchroniseer klok"** — de kachel verwacht de maand 0-gebaseerd bij het instellen, dus dat blijft `maand - 1`. Het commentaar in de code legt de asymmetrie uit.
+- **Robuuster: ongeldige datum of tijd** — een ongeldige kacheldatum valt terug op de lokale tijd, een ongeldige nachtverlagingstijd wordt `None`, en een fout bij het verwerken van de kachelgegevens geeft een `UpdateFailed` in plaats van een onverwachte fout.
+
 ## 1.1.0
 
 Fork van [mvn23/hwam_stove](https://github.com/mvn23/hwam_stove) door [@peterlindeman](https://github.com/peterlindeman), bijgewerkt voor Home Assistant 2026.06.
 
 ### Wijzigingen
 
-- **Fix: kacheldatum crasht bij maand/dag = 0** — de kachelfirmware stuurt maanden als 0-gebaseerd (0–11) en stuurt dag/maand `0` als de klok nooit gesynchroniseerd is. pystove gaf deze waarden onbewerkt door aan Python's `datetime()`, wat crashte. Opgelost door pystove te vendoren (meeleveren in de integratie) met de fix toegepast.
+- **Fix: kacheldatum crasht bij maand/dag = 0** — de kachelfirmware stuurt dag/maand `0` als de klok nooit gesynchroniseerd is. pystove gaf deze waarden onbewerkt door aan Python's `datetime()`, wat crashte. Opgelost door pystove te vendoren (meeleveren in de integratie) met de fix toegepast.
 - **Fix: `CONF_MONITORED_VARIABLES` verwijderd uit `homeassistant.const`** — dit constant bestaat niet meer in recente HA-versies. Nu lokaal gedefinieerd in de integratie (alleen nog gebruikt voor de verouderde YAML-configuratie).
 - **Fix: config flow stapnaam `init` → `user`** — HA vereist `step_id="user"` als startpunt voor de GUI-installatie. De vorige naam `init` werkte niet via de UI.
 - **Bijgewerkt: `hacs.json`** — bijgewerkt voor HACS v2 compatibiliteit.
